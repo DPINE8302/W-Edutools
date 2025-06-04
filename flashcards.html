@@ -1,0 +1,236 @@
+<!-- edutools/flashcards.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Quiz - EduTools</title>
+    <style>
+        /* 🔵 COMMON CSS (Same as index.html :root, [data-theme], body, theme-toggle) */
+        :root {
+            --bg-color: #f9f9f9; --card-bg-color: #ffffff; --text-color: #333333; --primary-color: #007AFF; --border-color: #e0e0e0; --shadow-color: rgba(0, 0, 0, 0.1); --hover-bg-color: #f0f0f0; --button-text-color: #ffffff; --input-bg-color: #ffffff; --input-border-color: #cccccc;
+        }
+        [data-theme="dark"] {
+            --bg-color: #1c1c1e; --card-bg-color: #2c2c2e; --text-color: #f5f5f7; --primary-color: #0A84FF; --border-color: #38383a; --shadow-color: rgba(0, 0, 0, 0.3); --hover-bg-color: #3a3a3c; --button-text-color: #ffffff; --input-bg-color: #2c2c2e; --input-border-color: #444444;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding: 20px; transition: background-color 0.3s, color 0.3s; }
+        .theme-toggle { position: fixed; top: 20px; right: 20px; background: var(--card-bg-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 20px; cursor: pointer; z-index: 1000; font-size: 0.9em; box-shadow: 0 2px 4px var(--shadow-color); }
+        .container { max-width: 600px; margin: 20px auto; padding: 25px; background-color: var(--card-bg-color); border-radius: 12px; box-shadow: 0 4px 12px var(--shadow-color); transition: background-color 0.3s, box-shadow 0.3s; }
+        h1 { color: var(--text-color); margin-top: 0; text-align: center; margin-bottom: 10px; }
+        a.back-link { display: inline-block; margin-bottom: 20px; font-size: 0.9em; font-weight: 500; color: var(--primary-color); }
+        a.back-link:hover { text-decoration: underline; }
+        button { background-color: var(--primary-color); color: var(--button-text-color); border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: 500; transition: background-color 0.2s ease-in-out; }
+        button:hover { opacity: 0.85; }
+        button:disabled { background-color: #cccccc; opacity: 0.6; cursor: not-allowed; }
+        input[type="text"], textarea { width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid var(--input-border-color); border-radius: 8px; background-color: var(--input-bg-color); color: var(--text-color); box-sizing: border-box; font-size: 1em; }
+        
+        /* 🔵 TOOL-SPECIFIC CSS GOES HERE */
+        .flashcard-app { text-align: center; }
+        .flashcard-container {
+            width: 100%;
+            height: 250px;
+            perspective: 1000px;
+            margin-bottom: 20px;
+        }
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+        .flashcard.is-flipped { transform: rotateY(180deg); }
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            border-radius: 12px;
+            background-color: var(--hover-bg-color);
+            border: 1px solid var(--border-color);
+            font-size: 1.5em;
+        }
+        .flashcard-front { /* styles already in .flashcard-face */ }
+        .flashcard-back { transform: rotateY(180deg); }
+        .navigation-controls, .status-display, .add-card-form { margin-bottom: 20px; }
+        .navigation-controls button { margin: 0 10px; }
+        .status-display { font-size: 0.9em; opacity: 0.8; }
+        .add-card-form details summary { cursor: pointer; font-weight: bold; color: var(--primary-color); margin-bottom: 10px; }
+        .add-card-form input { margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="theme-toggle">🌙 Dark Mode</button>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to EduTools Hub</a>
+        <h1>🃏 Flashcard Quiz</h1>
+
+        <div class="flashcard-app">
+            <div class="flashcard-container">
+                <div class="flashcard" id="flashcard">
+                    <div class="flashcard-face flashcard-front" id="flashcard-front"></div>
+                    <div class="flashcard-face flashcard-back" id="flashcard-back"></div>
+                </div>
+            </div>
+
+            <div class="status-display" id="status-display">Card 0 / 0</div>
+
+            <div class="navigation-controls">
+                <button id="prev-card">Previous</button>
+                <button id="next-card">Next</button>
+            </div>
+            
+            <div class="add-card-form">
+                <details>
+                    <summary>Add New Card</summary>
+                    <input type="text" id="new-card-front" placeholder="Front of card (Question)">
+                    <input type="text" id="new-card-back" placeholder="Back of card (Answer)">
+                    <button id="add-card-btn">Add Card</button>
+                </details>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🔵 TOOL FUNCTIONALITY GOES HERE
+        const flashcard = document.getElementById('flashcard');
+        const flashcardFront = document.getElementById('flashcard-front');
+        const flashcardBack = document.getElementById('flashcard-back');
+        const prevButton = document.getElementById('prev-card');
+        const nextButton = document.getElementById('next-card');
+        const statusDisplay = document.getElementById('status-display');
+        
+        const newCardFrontInput = document.getElementById('new-card-front');
+        const newCardBackInput = document.getElementById('new-card-back');
+        const addCardBtn = document.getElementById('add-card-btn');
+
+        let cards = [
+            { front: "What is the capital of France?", back: "Paris" },
+            { front: "What is 2 + 2?", back: "4" },
+            { front: "What is H₂O?", back: "Water" }
+        ];
+        let currentCardIndex = 0;
+        let isFlipped = false;
+
+        function loadCards() {
+            const storedCards = localStorage.getItem('flashcards');
+            if (storedCards) {
+                cards = JSON.parse(storedCards);
+            }
+            if (cards.length === 0) { // Ensure there's at least one default card if storage is empty or cleared
+                 cards = [{ front: "Add your first question!", back: "And your first answer!" }];
+            }
+        }
+
+        function saveCards() {
+            localStorage.setItem('flashcards', JSON.stringify(cards));
+        }
+
+        function displayCard() {
+            if (cards.length === 0) {
+                flashcardFront.textContent = "No cards available.";
+                flashcardBack.textContent = "Add some cards!";
+                statusDisplay.textContent = "Card 0 / 0";
+                prevButton.disabled = true;
+                nextButton.disabled = true;
+                return;
+            }
+            const card = cards[currentCardIndex];
+            flashcardFront.textContent = card.front;
+            flashcardBack.textContent = card.back;
+            isFlipped = false;
+            flashcard.classList.remove('is-flipped');
+            updateStatus();
+            updateNavButtons();
+        }
+
+        function updateStatus() {
+            statusDisplay.textContent = `Card ${currentCardIndex + 1} / ${cards.length}`;
+        }
+        
+        function updateNavButtons() {
+            prevButton.disabled = currentCardIndex === 0;
+            nextButton.disabled = currentCardIndex === cards.length - 1;
+        }
+
+        flashcard.addEventListener('click', () => {
+            if (cards.length === 0) return;
+            isFlipped = !isFlipped;
+            flashcard.classList.toggle('is-flipped');
+        });
+
+        prevButton.addEventListener('click', () => {
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                displayCard();
+            }
+        });
+
+        nextButton.addEventListener('click', () => {
+            if (currentCardIndex < cards.length - 1) {
+                currentCardIndex++;
+                displayCard();
+            }
+        });
+
+        addCardBtn.addEventListener('click', () => {
+            const front = newCardFrontInput.value.trim();
+            const back = newCardBackInput.value.trim();
+            if (front && back) {
+                cards.push({ front, back });
+                newCardFrontInput.value = '';
+                newCardBackInput.value = '';
+                saveCards();
+                if (cards.length === 1) { // If it was empty before
+                    currentCardIndex = 0;
+                } else if (currentCardIndex === cards.length - 2 && cards.length > 1) { 
+                    // If we were on the last card, stay on it (which is now second to last), then allow next.
+                    // Or simply go to the new card:
+                    // currentCardIndex = cards.length - 1;
+                }
+                displayCard(); // Refresh display
+                // Optionally, close the details accordion
+                const detailsElement = addCardBtn.closest('details');
+                if (detailsElement) detailsElement.open = false;
+            } else {
+                alert("Please fill both front and back of the card.");
+            }
+        });
+        
+        // Initial load
+        loadCards();
+        displayCard();
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                prevButton.click();
+            } else if (e.key === 'ArrowRight') {
+                nextButton.click();
+            } else if (e.key === ' ' || e.key === 'Enter') { // Space or Enter to flip
+                if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'BUTTON') {
+                     e.preventDefault(); // Prevent space from scrolling if card is focused
+                     flashcard.click();
+                }
+            }
+        });
+
+        // 🔵 COMMON DARK MODE JS
+        const themeToggle = document.getElementById('theme-toggle');
+        const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+        function applyTheme(theme) { if (theme === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); if (themeToggle) themeToggle.textContent = '☀️ Light Mode'; } else { document.documentElement.removeAttribute('data-theme'); if (themeToggle) themeToggle.textContent = '🌙 Dark Mode'; } }
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) { applyTheme(savedTheme); } else { applyTheme(prefersDarkScheme.matches ? 'dark' : 'light'); }
+        if (themeToggle) { themeToggle.addEventListener('click', () => { const currentTheme = document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light'; const newTheme = currentTheme === 'dark' ? 'light' : 'dark'; localStorage.setItem('theme', newTheme); applyTheme(newTheme); }); }
+        prefersDarkScheme.addEventListener('change', (e) => { if (!localStorage.getItem('theme')) { applyTheme(e.matches ? 'dark' : 'light'); } });
+    </script>
+</body>
+</html>

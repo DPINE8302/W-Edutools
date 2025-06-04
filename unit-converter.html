@@ -1,0 +1,199 @@
+<!-- edutools/unit-converter.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Converter - EduTools</title>
+    <style>
+        /* 🔵 COMMON CSS */
+        :root {
+            --bg-color: #f9f9f9; --card-bg-color: #ffffff; --text-color: #333333; --primary-color: #007AFF; --border-color: #e0e0e0; --shadow-color: rgba(0, 0, 0, 0.1); --hover-bg-color: #f0f0f0; --button-text-color: #ffffff; --input-bg-color: #ffffff; --input-border-color: #cccccc;
+        }
+        [data-theme="dark"] {
+            --bg-color: #1c1c1e; --card-bg-color: #2c2c2e; --text-color: #f5f5f7; --primary-color: #0A84FF; --border-color: #38383a; --shadow-color: rgba(0, 0, 0, 0.3); --hover-bg-color: #3a3a3c; --button-text-color: #ffffff; --input-bg-color: #2c2c2e; --input-border-color: #444444;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding: 20px; transition: background-color 0.3s, color 0.3s; }
+        .theme-toggle { position: fixed; top: 20px; right: 20px; background: var(--card-bg-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 20px; cursor: pointer; z-index: 1000; font-size: 0.9em; box-shadow: 0 2px 4px var(--shadow-color); }
+        .container { max-width: 600px; margin: 20px auto; padding: 25px; background-color: var(--card-bg-color); border-radius: 12px; box-shadow: 0 4px 12px var(--shadow-color); transition: background-color 0.3s, box-shadow 0.3s; }
+        h1 { color: var(--text-color); margin-top: 0; text-align: center; margin-bottom: 10px; }
+        a.back-link { display: inline-block; margin-bottom: 20px; font-size: 0.9em; font-weight: 500; color: var(--primary-color); }
+        a.back-link:hover { text-decoration: underline; }
+        input[type="number"], select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--input-border-color); border-radius: 8px; background-color: var(--input-bg-color); color: var(--text-color); box-sizing: border-box; font-size: 1em; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; }
+
+        /* 🔵 TOOL-SPECIFIC CSS GOES HERE */
+        .converter-form div { margin-bottom: 15px; }
+        .input-group { display: flex; align-items: center; gap: 10px; }
+        .input-group input[type="number"] { flex-grow: 1; }
+        .input-group select { width: auto; min-width: 100px; }
+        .equals-sign { font-size: 1.5em; margin: 0 10px; }
+        #conversion-result { font-size: 1.2em; font-weight: bold; margin-top: 10px; padding: 10px; background-color: var(--hover-bg-color); border-radius: 8px; text-align: center; }
+        #currency-info { font-size: 0.8em; opacity: 0.7; text-align: center; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="theme-toggle">🌙 Dark Mode</button>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to EduTools Hub</a>
+        <h1>📏 Unit Converter</h1>
+
+        <div class="converter-form">
+            <div>
+                <label for="category">Select Category:</label>
+                <select id="category">
+                    <option value="length">Length</option>
+                    <option value="weight">Weight</option>
+                    <option value="temperature">Temperature</option>
+                    <option value="currency">Currency</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <input type="number" id="input-value" value="1">
+                <select id="from-unit"></select>
+            </div>
+            
+            <div style="text-align: center; font-size: 1.5em; font-weight: bold;">=</div>
+
+            <div class="input-group">
+                 <input type="number" id="output-value" readonly>
+                 <select id="to-unit"></select>
+            </div>
+
+            <div id="currency-info" style="display:none;">Offline rates (example: 1 USD = 0.92 EUR, 0.79 GBP, 145 JPY)</div>
+        </div>
+    </div>
+
+    <script>
+        // 🔵 TOOL FUNCTIONALITY GOES HERE
+        const categorySelect = document.getElementById('category');
+        const fromUnitSelect = document.getElementById('from-unit');
+        const toUnitSelect = document.getElementById('to-unit');
+        const inputValue = document.getElementById('input-value');
+        const outputValue = document.getElementById('output-value');
+        const currencyInfo = document.getElementById('currency-info');
+
+        const units = {
+            length: {
+                meter: { name: 'Meter (m)', factor: 1 },
+                kilometer: { name: 'Kilometer (km)', factor: 1000 },
+                centimeter: { name: 'Centimeter (cm)', factor: 0.01 },
+                millimeter: { name: 'Millimeter (mm)', factor: 0.001 },
+                mile: { name: 'Mile (mi)', factor: 1609.34 },
+                yard: { name: 'Yard (yd)', factor: 0.9144 },
+                foot: { name: 'Foot (ft)', factor: 0.3048 },
+                inch: { name: 'Inch (in)', factor: 0.0254 },
+            },
+            weight: {
+                kilogram: { name: 'Kilogram (kg)', factor: 1 },
+                gram: { name: 'Gram (g)', factor: 0.001 },
+                milligram: { name: 'Milligram (mg)', factor: 0.000001 },
+                pound: { name: 'Pound (lb)', factor: 0.453592 },
+                ounce: { name: 'Ounce (oz)', factor: 0.0283495 },
+            },
+            temperature: { // Special handling needed
+                celsius: { name: 'Celsius (°C)' },
+                fahrenheit: { name: 'Fahrenheit (°F)' },
+                kelvin: { name: 'Kelvin (K)' },
+            },
+            currency: { // Base: USD
+                USD: { name: 'US Dollar (USD)', rate: 1 },
+                EUR: { name: 'Euro (EUR)', rate: 0.92 },
+                GBP: { name: 'British Pound (GBP)', rate: 0.79 },
+                JPY: { name: 'Japanese Yen (JPY)', rate: 145.0 },
+                CAD: { name: 'Canadian Dollar (CAD)', rate: 1.35 },
+                AUD: { name: 'Australian Dollar (AUD)', rate: 1.50 },
+            }
+        };
+
+        function populateUnits() {
+            const selectedCategory = categorySelect.value;
+            const currentUnits = units[selectedCategory];
+            
+            fromUnitSelect.innerHTML = '';
+            toUnitSelect.innerHTML = '';
+
+            for (const unitKey in currentUnits) {
+                const option1 = document.createElement('option');
+                option1.value = unitKey;
+                option1.textContent = currentUnits[unitKey].name;
+                fromUnitSelect.appendChild(option1);
+
+                const option2 = document.createElement('option');
+                option2.value = unitKey;
+                option2.textContent = currentUnits[unitKey].name;
+                toUnitSelect.appendChild(option2);
+            }
+            // Set default different units
+            if (fromUnitSelect.options.length > 1) {
+                 toUnitSelect.selectedIndex = 1;
+            }
+            currencyInfo.style.display = selectedCategory === 'currency' ? 'block' : 'none';
+            convert();
+        }
+
+        function convert() {
+            const val = parseFloat(inputValue.value);
+            if (isNaN(val)) {
+                outputValue.value = '';
+                return;
+            }
+
+            const category = categorySelect.value;
+            const from = fromUnitSelect.value;
+            const to = toUnitSelect.value;
+            let result;
+
+            if (category === 'temperature') {
+                result = convertTemperature(val, from, to);
+            } else {
+                const fromFactor = units[category][from].factor || units[category][from].rate;
+                const toFactor = units[category][to].factor || units[category][to].rate;
+                
+                // Convert to base unit first, then to target unit
+                const valueInBaseUnit = (category === 'currency') ? (val / fromFactor) : (val * fromFactor);
+                result = (category === 'currency') ? (valueInBaseUnit * toFactor) : (valueInBaseUnit / toFactor);
+            }
+            
+            // Round to a reasonable number of decimal places
+            if (typeof result === 'number') {
+                 outputValue.value = parseFloat(result.toFixed(5));
+            } else {
+                 outputValue.value = ''; // In case of error or no conversion
+            }
+        }
+
+        function convertTemperature(value, from, to) {
+            if (from === to) return value;
+            let celsius;
+            // Convert input to Celsius first
+            if (from === 'fahrenheit') celsius = (value - 32) * 5/9;
+            else if (from === 'kelvin') celsius = value - 273.15;
+            else celsius = value; // Already Celsius
+
+            // Convert Celsius to target unit
+            if (to === 'fahrenheit') return (celsius * 9/5) + 32;
+            if (to === 'kelvin') return celsius + 273.15;
+            return celsius; // Target is Celsius
+        }
+        
+        categorySelect.addEventListener('change', populateUnits);
+        inputValue.addEventListener('input', convert);
+        fromUnitSelect.addEventListener('change', convert);
+        toUnitSelect.addEventListener('change', convert);
+
+        // Initial population
+        populateUnits();
+        
+        // 🔵 COMMON DARK MODE JS
+        const themeToggle = document.getElementById('theme-toggle');
+        const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+        function applyTheme(theme) { if (theme === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); if (themeToggle) themeToggle.textContent = '☀️ Light Mode'; } else { document.documentElement.removeAttribute('data-theme'); if (themeToggle) themeToggle.textContent = '🌙 Dark Mode'; } }
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) { applyTheme(savedTheme); } else { applyTheme(prefersDarkScheme.matches ? 'dark' : 'light'); }
+        if (themeToggle) { themeToggle.addEventListener('click', () => { const currentTheme = document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light'; const newTheme = currentTheme === 'dark' ? 'light' : 'dark'; localStorage.setItem('theme', newTheme); applyTheme(newTheme); }); }
+        prefersDarkScheme.addEventListener('change', (e) => { if (!localStorage.getItem('theme')) { applyTheme(e.matches ? 'dark' : 'light'); } });
+    </script>
+</body>
+</html>

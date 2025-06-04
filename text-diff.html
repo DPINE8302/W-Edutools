@@ -1,0 +1,247 @@
+<!-- edutools/text-diff.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Diff Checker - EduTools</title>
+    <style>
+        /* 🔵 COMMON CSS */
+        :root {
+            --bg-color: #f9f9f9; --card-bg-color: #ffffff; --text-color: #333333; --primary-color: #007AFF; --border-color: #e0e0e0; --shadow-color: rgba(0, 0, 0, 0.1); --hover-bg-color: #f0f0f0; --button-text-color: #ffffff; --input-bg-color: #ffffff; --input-border-color: #cccccc;
+            --deleted-bg: #ffeef0; --deleted-color: #c00; --inserted-bg: #e6ffed; --inserted-color: #080;
+        }
+        [data-theme="dark"] {
+            --bg-color: #1c1c1e; --card-bg-color: #2c2c2e; --text-color: #f5f5f7; --primary-color: #0A84FF; --border-color: #38383a; --shadow-color: rgba(0, 0, 0, 0.3); --hover-bg-color: #3a3a3c; --button-text-color: #ffffff; --input-bg-color: #2c2c2e; --input-border-color: #444444;
+            --deleted-bg: #5c1f26; --deleted-color: #ff8f9a; --inserted-bg: #1c4a2d; --inserted-color: #79ff96;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding: 20px; transition: background-color 0.3s, color 0.3s; }
+        .theme-toggle { position: fixed; top: 20px; right: 20px; background: var(--card-bg-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 20px; cursor: pointer; z-index: 1000; font-size: 0.9em; box-shadow: 0 2px 4px var(--shadow-color); }
+        .container { max-width: 900px; margin: 20px auto; padding: 25px; background-color: var(--card-bg-color); border-radius: 12px; box-shadow: 0 4px 12px var(--shadow-color); transition: background-color 0.3s, box-shadow 0.3s; }
+        h1 { color: var(--text-color); margin-top: 0; text-align: center; margin-bottom: 10px; }
+        a.back-link { display: inline-block; margin-bottom: 20px; font-size: 0.9em; font-weight: 500; color: var(--primary-color); }
+        a.back-link:hover { text-decoration: underline; }
+        button { background-color: var(--primary-color); color: var(--button-text-color); border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: 500; transition: background-color 0.2s ease-in-out; margin-top: 10px; }
+        button:hover { opacity: 0.85; }
+        textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--input-border-color); border-radius: 8px; background-color: var(--input-bg-color); color: var(--text-color); box-sizing: border-box; font-size: 0.9em; min-height: 200px; font-family: 'Menlo', 'Consolas', monospace; white-space: pre; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; }
+
+        /* 🔵 TOOL-SPECIFIC CSS GOES HERE */
+        .diff-inputs { display: flex; gap: 20px; margin-bottom: 20px; }
+        .diff-inputs > div { flex: 1; }
+        #diff-output {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 200px;
+            background-color: var(--input-bg-color);
+            font-family: 'Menlo', 'Consolas', monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+        #diff-output ins {
+            background-color: var(--inserted-bg);
+            color: var(--inserted-color);
+            text-decoration: none;
+        }
+        #diff-output del {
+            background-color: var(--deleted-bg);
+            color: var(--deleted-color);
+            text-decoration: none;
+        }
+        #diff-output .line-num {
+            display: inline-block;
+            width: 30px; /* Adjust as needed */
+            text-align: right;
+            padding-right: 10px;
+            opacity: 0.5;
+            user-select: none;
+        }
+        #diff-output .line-content.added { background-color: var(--inserted-bg); }
+        #diff-output .line-content.removed { background-color: var(--deleted-bg); }
+        #diff-output .line-content { display: block; } /* Each line on its own row */
+        #diff-output .line-content.common .diff-common { /* no specific styling needed beyond default */ }
+        #diff-output .line-content.modified .diff-added { background-color: var(--inserted-bg); color: var(--inserted-color); }
+        #diff-output .line-content.modified .diff-removed { background-color: var(--deleted-bg); color: var(--deleted-color); }
+
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="theme-toggle">🌙 Dark Mode</button>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to EduTools Hub</a>
+        <h1>📝 Text Diff Checker</h1>
+
+        <div class="diff-inputs">
+            <div>
+                <label for="text-input1">Original Text:</label>
+                <textarea id="text-input1" placeholder="Enter original text here..."></textarea>
+            </div>
+            <div>
+                <label for="text-input2">Changed Text:</label>
+                <textarea id="text-input2" placeholder="Enter changed text here..."></textarea>
+            </div>
+        </div>
+
+        <button id="compare-btn">Compare Texts</button>
+
+        <div>
+            <h3>Differences:</h3>
+            <div id="diff-output"></div>
+        </div>
+    </div>
+
+    <script>
+        // 🔵 TOOL FUNCTIONALITY GOES HERE
+        const textInput1 = document.getElementById('text-input1');
+        const textInput2 = document.getElementById('text-input2');
+        const compareBtn = document.getElementById('compare-btn');
+        const diffOutput = document.getElementById('diff-output');
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        // Basic LCS (Longest Common Subsequence) algorithm
+        // Returns an array of objects: { value, type: 'common' | 'added' | 'removed' }
+        function computeLCS(seq1, seq2) {
+            const m = seq1.length;
+            const n = seq2.length;
+            const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    if (seq1[i - 1] === seq2[j - 1]) {
+                        dp[i][j] = dp[i - 1][j - 1] + 1;
+                    } else {
+                        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                    }
+                }
+            }
+
+            let i = m, j = n;
+            const diff = [];
+            while (i > 0 || j > 0) {
+                if (i > 0 && j > 0 && seq1[i - 1] === seq2[j - 1]) {
+                    diff.unshift({ value: seq1[i - 1], type: 'common' });
+                    i--; j--;
+                } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+                    diff.unshift({ value: seq2[j - 1], type: 'added' });
+                    j--;
+                } else if (i > 0 && (j === 0 || dp[i][j - 1] < dp[i - 1][j])) {
+                    diff.unshift({ value: seq1[i - 1], type: 'removed' });
+                    i--;
+                } else {
+                    break; // Should ideally not happen
+                }
+            }
+            return diff;
+        }
+        
+        function generateDiffHtml(diff) {
+            let html = '';
+            let lineNum1 = 1;
+            let lineNum2 = 1;
+            diff.forEach(item => {
+                const escapedValue = escapeHtml(item.value);
+                if (item.type === 'common') {
+                    html += `<span class="line-content common"><span class="line-num">${lineNum1++} ${lineNum2++}</span> ${escapedValue}</span>`;
+                } else if (item.type === 'added') {
+                    html += `<span class="line-content added"><span class="line-num">  ${lineNum2++}</span>+ ${escapedValue}</span>`;
+                } else if (item.type === 'removed') {
+                    html += `<span class="line-content removed"><span class="line-num">${lineNum1++}  </span>- ${escapedValue}</span>`;
+                }
+            });
+            return html;
+        }
+
+        function generateWordDiffHtml(line1, line2, lineNum1, lineNum2) {
+            // Split by space and punctuation, keeping delimiters: /(\s+|[^\w\s]+)/
+            // Simpler: split by space, then re-evaluate. For now, character diff is more straightforward.
+            const words1 = line1.split(/(\s+)/); // Keep spaces as separate tokens for rejoining
+            const words2 = line2.split(/(\s+)/);
+            const wordDiff = computeLCS(words1, words2);
+            
+            let lineHtml = `<span class="line-content modified"><span class="line-num">${lineNum1} ${lineNum2}</span> `;
+            wordDiff.forEach(item => {
+                const escapedValue = escapeHtml(item.value);
+                if (item.type === 'common') {
+                    lineHtml += `<span class="diff-common">${escapedValue}</span>`;
+                } else if (item.type === 'added') {
+                    lineHtml += `<ins class="diff-added">${escapedValue}</ins>`;
+                } else if (item.type === 'removed') {
+                    lineHtml += `<del class="diff-removed">${escapedValue}</del>`;
+                }
+            });
+            lineHtml += `</span>`;
+            return lineHtml;
+        }
+
+
+        function performDiff() {
+            const text1 = textInput1.value;
+            const text2 = textInput2.value;
+
+            const lines1 = text1.split('\n');
+            const lines2 = text2.split('\n');
+            
+            const lineDiff = computeLCS(lines1, lines2);
+            
+            let html = '';
+            let currentLine1 = 0;
+            let currentLine2 = 0;
+
+            lineDiff.forEach(item => {
+                const escapedValue = escapeHtml(item.value);
+                if (item.type === 'common') {
+                    html += `<span class="line-content common"><span class="line-num">${currentLine1 + 1} ${currentLine2 + 1}</span> ${escapedValue}</span>`;
+                    currentLine1++;
+                    currentLine2++;
+                } else if (item.type === 'added') {
+                    html += `<span class="line-content added"><span class="line-num">  ${currentLine2 + 1}</span>+ ${escapedValue}</span>`;
+                    currentLine2++;
+                } else if (item.type === 'removed') {
+                    // Try to find if this removed line corresponds to an added line (a modification)
+                    const nextItemIndex = lineDiff.indexOf(item) + 1;
+                    if (nextItemIndex < lineDiff.length && lineDiff[nextItemIndex].type === 'added') {
+                        // This is a modification. Perform word-level diff.
+                        // We need to "consume" the next 'added' item here.
+                        const addedLineItem = lineDiff[nextItemIndex];
+                        html += generateWordDiffHtml(item.value, addedLineItem.value, currentLine1 + 1, currentLine2 + 1);
+                        lineDiff.splice(nextItemIndex, 1); // Remove the processed added line
+                        currentLine1++;
+                        currentLine2++;
+                    } else {
+                        html += `<span class="line-content removed"><span class="line-num">${currentLine1 + 1}  </span>- ${escapedValue}</span>`;
+                        currentLine1++;
+                    }
+                }
+            });
+            
+            diffOutput.innerHTML = html;
+        }
+
+        compareBtn.addEventListener('click', performDiff);
+
+        // Example Texts
+        textInput1.value = "This is the first line.\nThis line is common.\nThis line will be removed.\nAnother common line.\nThis line will be modified significantly.";
+        textInput2.value = "This is the first line, modified.\nThis line is common.\nThis line was added.\nAnother common line.\nThis line will be modified slightly here.";
+        performDiff();
+        
+        // 🔵 COMMON DARK MODE JS
+        const themeToggle = document.getElementById('theme-toggle');
+        const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+        function applyTheme(theme) { if (theme === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); if (themeToggle) themeToggle.textContent = '☀️ Light Mode'; } else { document.documentElement.removeAttribute('data-theme'); if (themeToggle) themeToggle.textContent = '🌙 Dark Mode'; } }
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) { applyTheme(savedTheme); } else { applyTheme(prefersDarkScheme.matches ? 'dark' : 'light'); }
+        if (themeToggle) { themeToggle.addEventListener('click', () => { const currentTheme = document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light'; const newTheme = currentTheme === 'dark' ? 'light' : 'dark'; localStorage.setItem('theme', newTheme); applyTheme(newTheme); }); }
+        prefersDarkScheme.addEventListener('change', (e) => { if (!localStorage.getItem('theme')) { applyTheme(e.matches ? 'dark' : 'light'); } });
+    </script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!-- edutools/regex-tester.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regex Tester - EduTools</title>
+    <style>
+        /* 🔵 COMMON CSS */
+        :root {
+            --bg-color: #f9f9f9; --card-bg-color: #ffffff; --text-color: #333333; --primary-color: #007AFF; --border-color: #e0e0e0; --shadow-color: rgba(0, 0, 0, 0.1); --hover-bg-color: #f0f0f0; --button-text-color: #ffffff; --input-bg-color: #ffffff; --input-border-color: #cccccc; --code-bg-color: #f0f0f0;
+        }
+        [data-theme="dark"] {
+            --bg-color: #1c1c1e; --card-bg-color: #2c2c2e; --text-color: #f5f5f7; --primary-color: #0A84FF; --border-color: #38383a; --shadow-color: rgba(0, 0, 0, 0.3); --hover-bg-color: #3a3a3c; --button-text-color: #ffffff; --input-bg-color: #2c2c2e; --input-border-color: #444444; --code-bg-color: #3a3a3c;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; padding: 20px; transition: background-color 0.3s, color 0.3s; }
+        .theme-toggle { position: fixed; top: 20px; right: 20px; background: var(--card-bg-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 20px; cursor: pointer; z-index: 1000; font-size: 0.9em; box-shadow: 0 2px 4px var(--shadow-color); }
+        .container { max-width: 800px; margin: 20px auto; padding: 25px; background-color: var(--card-bg-color); border-radius: 12px; box-shadow: 0 4px 12px var(--shadow-color); transition: background-color 0.3s, box-shadow 0.3s; }
+        h1 { color: var(--text-color); margin-top: 0; text-align: center; margin-bottom: 10px; }
+        a.back-link { display: inline-block; margin-bottom: 20px; font-size: 0.9em; font-weight: 500; color: var(--primary-color); }
+        a.back-link:hover { text-decoration: underline; }
+        input[type="text"], textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--input-border-color); border-radius: 8px; background-color: var(--input-bg-color); color: var(--text-color); box-sizing: border-box; font-size: 1em; }
+        textarea { min-height: 150px; font-family: 'Menlo', 'Consolas', monospace; white-space: pre; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; }
+
+        /* 🔵 TOOL-SPECIFIC CSS GOES HERE */
+        .regex-input-container { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .regex-input-container input[type="text"]:first-child { flex-grow: 1; } /* Regex pattern */
+        .regex-input-container input[type="text"]:last-child { width: 80px; } /* Flags */
+        
+        #results-area { margin-top: 15px; }
+        #match-count { font-weight: bold; margin-bottom: 10px; }
+        #error-message { color: #D8000C; background-color: #FFD2D2; border: 1px solid #D8000C; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: none; }
+        [data-theme="dark"] #error-message { color: #ff8f9a; background-color: #5c1f26; border-color: #ff8f9a; }
+        
+        #highlighted-text {
+            padding: 10px;
+            border: 1px solid var(--input-border-color);
+            border-radius: 8px;
+            background-color: var(--input-bg-color);
+            min-height: 100px;
+            white-space: pre-wrap; /* Allows wrapping and preserves spaces/newlines */
+            word-wrap: break-word;
+            font-family: 'Menlo', 'Consolas', monospace;
+            line-height: 1.5;
+        }
+        #highlighted-text .match {
+            background-color: var(--primary-color);
+            color: var(--button-text-color);
+            border-radius: 3px;
+            padding: 0.1em 0.2em;
+            font-weight: bold;
+        }
+        [data-theme="dark"] #highlighted-text .match {
+             background-color: var(--primary-color); /* Or a specific highlight for dark mode */
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="theme-toggle">🌙 Dark Mode</button>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to EduTools Hub</a>
+        <h1>🔍 Regex Tester</h1>
+
+        <div>
+            <label for="regex-pattern">Regular Expression:</label>
+            <div class="regex-input-container">
+                <input type="text" id="regex-pattern" placeholder="/pattern/modifiers">
+                <input type="text" id="regex-flags" placeholder="flags (g, i, m)" value="g">
+            </div>
+        </div>
+
+        <div>
+            <label for="test-string">Test String:</label>
+            <textarea id="test-string" placeholder="Enter your text here..."></textarea>
+        </div>
+
+        <div id="results-area">
+            <h3>Results:</h3>
+            <div id="match-count">Matches: 0</div>
+            <div id="error-message"></div>
+            <label for="highlighted-text">Highlighted Matches:</label>
+            <div id="highlighted-text"></div>
+        </div>
+    </div>
+
+    <script>
+        // 🔵 TOOL FUNCTIONALITY GOES HERE
+        const regexPatternInput = document.getElementById('regex-pattern');
+        const regexFlagsInput = document.getElementById('regex-flags');
+        const testStringInput = document.getElementById('test-string');
+        const matchCountDisplay = document.getElementById('match-count');
+        const errorMessageDisplay = document.getElementById('error-message');
+        const highlightedTextDisplay = document.getElementById('highlighted-text');
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+        
+        function testRegex() {
+            const patternStr = regexPatternInput.value;
+            const flags = regexFlagsInput.value;
+            const testStr = testStringInput.value;
+
+            if (!patternStr) {
+                highlightedTextDisplay.innerHTML = escapeHtml(testStr);
+                matchCountDisplay.textContent = 'Matches: 0';
+                errorMessageDisplay.style.display = 'none';
+                return;
+            }
+
+            try {
+                const regex = new RegExp(patternStr, flags);
+                errorMessageDisplay.style.display = 'none';
+                
+                let match;
+                let matches = [];
+                // Ensure global flag for matchAll or iterative exec
+                const effectiveFlags = flags.includes('g') ? flags : flags + 'g';
+                const globalRegex = new RegExp(patternStr, effectiveFlags);
+
+                while ((match = globalRegex.exec(testStr)) !== null) {
+                    matches.push({
+                        text: match[0],
+                        index: match.index,
+                        length: match[0].length
+                    });
+                    if (!globalRegex.global) break; // Avoid infinite loop if 'g' is not present and exec doesn't advance
+                }
+
+                matchCountDisplay.textContent = `Matches: ${matches.length}`;
+                
+                let highlightedHTML = '';
+                let lastIndex = 0;
+                matches.forEach(m => {
+                    highlightedHTML += escapeHtml(testStr.substring(lastIndex, m.index));
+                    highlightedHTML += `<span class="match">${escapeHtml(m.text)}</span>`;
+                    lastIndex = m.index + m.length;
+                });
+                highlightedHTML += escapeHtml(testStr.substring(lastIndex));
+                
+                highlightedTextDisplay.innerHTML = highlightedHTML || escapeHtml(testStr); // Show original if no matches or empty
+
+            } catch (e) {
+                errorMessageDisplay.textContent = e.message;
+                errorMessageDisplay.style.display = 'block';
+                matchCountDisplay.textContent = 'Matches: 0';
+                highlightedTextDisplay.innerHTML = escapeHtml(testStr); // Show original text on error
+            }
+        }
+
+        regexPatternInput.addEventListener('input', testRegex);
+        regexFlagsInput.addEventListener('input', testRegex);
+        testStringInput.addEventListener('input', testRegex);
+
+        // Initial test
+        testStringInput.value = "The quick brown fox jumps over the lazy dog. 123-456-7890. test@example.com";
+        regexPatternInput.value = "\\b\\w+\\b"; // Default example: match words
+        testRegex();
+        
+        // 🔵 COMMON DARK MODE JS
+        const themeToggle = document.getElementById('theme-toggle');
+        const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+        function applyTheme(theme) { if (theme === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); if (themeToggle) themeToggle.textContent = '☀️ Light Mode'; } else { document.documentElement.removeAttribute('data-theme'); if (themeToggle) themeToggle.textContent = '🌙 Dark Mode'; } }
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) { applyTheme(savedTheme); } else { applyTheme(prefersDarkScheme.matches ? 'dark' : 'light'); }
+        if (themeToggle) { themeToggle.addEventListener('click', () => { const currentTheme = document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light'; const newTheme = currentTheme === 'dark' ? 'light' : 'dark'; localStorage.setItem('theme', newTheme); applyTheme(newTheme); }); }
+        prefersDarkScheme.addEventListener('change', (e) => { if (!localStorage.getItem('theme')) { applyTheme(e.matches ? 'dark' : 'light'); } });
+    </script>
+</body>
+</html>

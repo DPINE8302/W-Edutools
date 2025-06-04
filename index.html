@@ -1,0 +1,310 @@
+<!-- edutools/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduTools - Essential Utilities for Learning</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f7; /* Apple's light grey */
+            --card-bg-color: #ffffff;
+            --text-color-primary: #1d1d1f; /* Apple's primary text black */
+            --text-color-secondary: #515154; /* Apple's secondary grey text */
+            --accent-color: #007aff; /* Apple's classic blue */
+            --border-color: #d2d2d7;
+            --shadow-color-light: rgba(0, 0, 0, 0.05);
+            --shadow-color-medium: rgba(0, 0, 0, 0.1);
+            --hover-bg-color: #e8e8ed;
+            --tool-icon-bg: #e9e9ed;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #161617; /* Darker base for Apple dark */
+            --card-bg-color: #1d1d1f; /* Slightly lighter than bg for cards */
+            --text-color-primary: #f5f5f7;
+            --text-color-secondary: #a1a1a6;
+            --accent-color: #0a84ff; /* Brighter blue for dark mode */
+            --border-color: #3a3a3c;
+            --shadow-color-light: rgba(0, 0, 0, 0.15);
+            --shadow-color-medium: rgba(0, 0, 0, 0.25);
+            --hover-bg-color: #2c2c2e;
+            --tool-icon-bg: #2c2c2e;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color-primary);
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .theme-toggle-container {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            padding: 20px 30px;
+        }
+
+        .theme-toggle {
+            background: var(--card-bg-color);
+            color: var(--text-color-secondary);
+            border: 1px solid var(--border-color);
+            padding: 10px 18px;
+            border-radius: 30px; /* More pill-shaped */
+            cursor: pointer;
+            z-index: 1000;
+            font-size: 0.9em;
+            font-weight: 500;
+            box-shadow: 0 3px 8px var(--shadow-color-light);
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .theme-toggle:hover {
+            background: var(--hover-bg-color);
+            box-shadow: 0 5px 12px var(--shadow-color-medium);
+        }
+
+        .hero-section {
+            text-align: center;
+            padding: 60px 20px 80px; /* More vertical padding */
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .hero-section .logo-main { /* Optional: if you have a logo SVG/image */
+            font-size: 3em;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            /* Or use an <img> tag */
+        }
+
+        .hero-section h1 {
+            font-size: 3em; /* Larger title */
+            font-weight: 600;
+            color: var(--text-color-primary);
+            margin-bottom: 0.3em;
+            letter-spacing: -0.02em;
+        }
+
+        .hero-section p.tagline {
+            font-size: 1.25em;
+            color: var(--text-color-secondary);
+            max-width: 600px;
+            margin: 0 auto 30px auto;
+            line-height: 1.6;
+        }
+
+        .tools-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px; /* Increased gap */
+            width: 100%;
+            max-width: 1200px; /* Wider max-width for showcase */
+            padding: 0 30px 60px; /* Add horizontal padding */
+        }
+
+        .tool-item {
+            background-color: var(--card-bg-color);
+            border-radius: 20px; /* More rounded corners */
+            padding: 30px;
+            box-shadow: 0 8px 25px var(--shadow-color-light);
+            text-decoration: none;
+            color: var(--text-color-primary);
+            transition: transform 0.25s cubic-bezier(0.25, 0.1, 0.25, 1), box-shadow 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tool-item:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 40px var(--shadow-color-medium);
+        }
+
+        .tool-icon-container {
+            width: 64px; /* Larger icon container */
+            height: 64px;
+            border-radius: 12px; /* Rounded icon bg */
+            background-color: var(--tool-icon-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .tool-icon {
+            font-size: 2.5em; /* Larger icon */
+            color: var(--accent-color);
+        }
+
+        .tool-item h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--text-color-primary);
+        }
+
+        .tool-item p.description {
+            font-size: 0.95em;
+            color: var(--text-color-secondary);
+            flex-grow: 1;
+            margin-bottom: 25px; /* More space before link */
+            line-height: 1.6;
+        }
+        
+        .tool-link {
+            display: inline-flex; /* For aligning icon with text */
+            align-items: center;
+            color: var(--accent-color);
+            font-weight: 500;
+            text-decoration: none;
+            font-size: 0.95em;
+            transition: opacity 0.2s;
+        }
+        .tool-link:hover {
+            opacity: 0.75;
+        }
+        .tool-link .arrow {
+            margin-left: 6px;
+            transition: transform 0.2s;
+        }
+        .tool-item:hover .tool-link .arrow {
+            transform: translateX(4px);
+        }
+
+        footer {
+            margin-top: auto; /* Pushes footer to bottom */
+            padding: 40px 20px;
+            text-align: center;
+            font-size: 0.85em;
+            color: var(--text-color-secondary);
+            width: 100%;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--card-bg-color); /* Footer matches card bg */
+        }
+
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 2.5em;
+            }
+            .hero-section p.tagline {
+                font-size: 1.1em;
+            }
+            .tools-showcase {
+                grid-template-columns: 1fr; /* Single column on smaller screens */
+                gap: 25px;
+                padding: 0 20px 40px;
+            }
+            .tool-item {
+                padding: 25px;
+            }
+            .theme-toggle-container {
+                padding: 15px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-toggle-container">
+        <button class="theme-toggle" id="theme-toggle">🌙 Dark Mode</button>
+    </div>
+
+    <header class="hero-section">
+        <!-- <div class="logo-main">🛠️</div> Optional visual element -->
+        <h1>EduTools</h1>
+        <p class="tagline">A suite of essential, offline-ready utilities designed to enhance your learning and productivity. All in your browser.</p>
+    </header>
+
+    <main class="tools-showcase">
+        <a href="flashcards.html" class="tool-item">
+            <div class="tool-icon-container"><span class="tool-icon">🃏</span></div>
+            <h2>Flashcard Quiz</h2>
+            <p class="description">Master any subject. Create, review, and test your knowledge with interactive digital flashcards.</p>
+            <span class="tool-link">Open Tool <span class="arrow">→</span></span>
+        </a>
+
+        <a href="unit-converter.html" class="tool-item">
+            <div class="tool-icon-container"><span class="tool-icon">📏</span></div>
+            <h2>Unit Converter</h2>
+            <p class="description">Instantly convert between various units of length, weight, temperature, and currency with offline rates.</p>
+            <span class="tool-link">Open Tool <span class="arrow">→</span></span>
+        </a>
+
+        <a href="regex-tester.html" class="tool-item">
+            <div class="tool-icon-container"><span class="tool-icon">🔍</span></div>
+            <h2>Regex Tester</h2>
+            <p class="description">Craft and test your regular expressions in real-time. Visualize matches and debug patterns effortlessly.</p>
+            <span class="tool-link">Open Tool <span class="arrow">→</span></span>
+        </a>
+
+        <a href="text-diff.html" class="tool-item">
+            <div class="tool-icon-container"><span class="tool-icon">📝</span></div>
+            <h2>Text Diff Checker</h2>
+            <p class="description">Compare two blocks of text to quickly identify differences, additions, and deletions with clear highlighting.</p>
+            <span class="tool-link">Open Tool <span class="arrow">→</span></span>
+        </a>
+
+        <a href="periodic-table.html" class="tool-item">
+            <div class="tool-icon-container"><span class="tool-icon">🧪</span></div>
+            <h2>Periodic Table</h2>
+            <p class="description">Explore an interactive periodic table. Discover element properties, categories, and detailed information at a click.</p>
+            <span class="tool-link">Open Tool <span class="arrow">→</span></span>
+        </a>
+    </main>
+
+    <footer>
+        <p>&copy; <span id="currentYear"></span> EduTools. Smart utilities, simply delivered. Works offline.</p>
+    </footer>
+
+    <script>
+        // Dark Mode Toggle Functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                if (themeToggle) themeToggle.textContent = '☀️ Light Mode';
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                if (themeToggle) themeToggle.textContent = '🌙 Dark Mode';
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            applyTheme(savedTheme);
+        } else {
+            applyTheme(prefersDarkScheme.matches ? 'dark' : 'light');
+        }
+
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const currentTheme = document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light';
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('theme', newTheme);
+                applyTheme(newTheme);
+            });
+        }
+        
+        prefersDarkScheme.addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                applyTheme(e.matches ? 'dark' : 'light');
+            }
+        });
+
+        // Set current year in footer
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>
